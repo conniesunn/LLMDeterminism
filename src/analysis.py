@@ -2,6 +2,11 @@ import openai
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.metrics import jaccard_score
+import random
+import nltk
+from nltk.corpus import wordnet
+nltk.download('averaged_perceptron_tagger')
+nltk.download('wordnet')
 
 # Function to get LLM responses
 def get_llm_response(prompt, openai_api_key):
@@ -29,7 +34,7 @@ prompts = [
 ]
 
 # API key (you must use your actual API key here)
-openai_api_key = "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"
+openai_api_key = "key"
 
 # Collect responses from LLM
 responses = {}
@@ -37,19 +42,50 @@ for prompt in prompts:
     responses[prompt] = get_llm_response(prompt, openai_api_key)
     print(responses[prompt])
 
+
+def get_synonyms(word):
+    synonyms = set()
+    for syn in wordnet.synsets(word):
+        for lemma in syn.lemmas():
+            synonyms.add(lemma.name())
+    return list(synonyms)
+
+def replace_synonyms(sentence):
+    words = nltk.word_tokenize(sentence)
+    pos_tags = nltk.pos_tag(words)
+
+    # Randomly choose a noun or adjective to replace with a synonym
+    candidates = [word for word, pos in pos_tags if pos in ["NN", "JJ"]]
+    if candidates:
+        to_replace = random.choice(candidates)
+        synonyms = get_synonyms(to_replace)
+        if synonyms:
+            synonym = random.choice(synonyms)
+            return sentence.replace(to_replace, synonym, 1)
+    return sentence
+
+def generate_variations(base_prompt):
+    variation1 = replace_synonyms(base_prompt)
+    
+    # Simple sentence restructuring
+    if base_prompt.startswith("What is the"):
+        variation2 = base_prompt.replace("What is the", "Can you tell me what the", 1)
+    else:
+        variation2 = "Can you tell me: " + base_prompt
+    
+    # Asking the question in a different way
+    variation3 = base_prompt.replace("What is the", "I'm curious about the", 1)
+    
+    return [variation1, variation2, variation3]
+
 # Calculate Jaccard Similarity between base prompt response and variations
 jaccard_similarities = {}
 for base_prompt in prompts:
-    variations = [
-        # Add the variations for each base prompt here
-        "Can you tell me what the capital of France is?",
-        "France's capital is...?",
-        "What is considered the capital city of the French Republic?",
-        "I'm wondering, what city is the capital of France?"
-    ]
+    variations = generate_variations(base_prompt)
     base_response = responses[base_prompt]
     jaccard_similarities[base_prompt] = []
     for var in variations:
+        print(var)
         var_response = get_llm_response(var, openai_api_key)
         print(var_response)
         similarity = calculate_jaccard_similarity(base_response, var_response)

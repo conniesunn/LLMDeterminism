@@ -1,0 +1,12 @@
+{
+    "prompts": [
+        {
+            "base": "What is the capital city of France?",
+            "variations": [
+                "Can you tell me what the capital of France is?",
+                "France's capital is...?",
+                "What is considered the capital city of the French Republic?"
+            ]
+        }
+    ]
+}
